@@ -11,6 +11,22 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
+    # 1. Safe Setup: Normalize Username
+    - name: Setup Variables
+      run: |
+        # Force username to lowercase to prevent Docker tag errors
+        echo "DOCKER_HANDLE=$(echo ${{ secrets.DOCKERHUB_USERNAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+    # 2. Debug: Verify Secret Loading (Safe)
+    - name: Verify Secrets
+      run: |
+        echo "Handle: $DOCKER_HANDLE"
+        if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+          echo "::error::Token Secret is MISSING!"
+          exit 1
+        else
+          echo "Token Secret is LOADED (Masked)"
+        fi
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -19,7 +35,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build Docker image
-      run: docker build -t ${{ secrets.DOCKERHUB_USERNAME   }}/docker-web-app:latest .
+      run: docker build -t ${{ env.DOCKER_HANDLE  }}/docker-web-app:latest .
 
     - name: Push Docker image
-      run: docker push ${{ secrets.DOCKERHUB_USERNAME   }}/docker-web-app:latest
+      run: docker push ${{ env.DOCKER_HANDLE  }}/docker-web-app:latest
